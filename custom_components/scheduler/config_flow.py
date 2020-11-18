@@ -6,6 +6,7 @@ from homeassistant import config_entries
 from . import DOMAIN
 
 
+# E999 SyntaxError: invalid syntax
 class SchedulerConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Config flow for Scheduler."""
 

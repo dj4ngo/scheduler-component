@@ -37,14 +37,14 @@ from .helpers import (
 _LOGGER = logging.getLogger(__name__)
 
 EntryPattern = re.compile(
-    "^([0-9]+)?D([0-9]+)?T([0-9SRDUW]+)T?([0-9SRDUW]+)?A([A0-9]+)+(C([C0-9]+))?(F([F0-9]+))?$"
+    "^([0-9]+)?D([0-9]+)?T([0-9SRDUW]+)T?" +
+    "([0-9SRDUW]+)?A([A0-9]+)+(C([C0-9]+))?(F([F0-9]+))?$"
 )
 
 FixedTimePattern = re.compile("^([0-9]{2})([0-9]{2})$")
 SunTimePattern = re.compile(
     "^(([0-9]{2})([0-9]{2}))?([SRDUW]{2})(([0-9]{2})([0-9]{2}))?$"
 )
-
 
 
 class DataCollection:
@@ -60,6 +60,7 @@ class DataCollection:
         self.sun_data = None
         self.workday_data = None
 
+# E999 SyntaxError: invalid syntax
     def import_from_service(self, data: dict):
         for action in data["actions"]:
             service = action["service"]
@@ -116,7 +117,7 @@ class DataCollection:
                 my_entry["days"]["type"] = entry["days"]["type"]
 
                 if entry["days"]["type"] == DAY_TYPE_CUSTOM:
-                    if not "list" in entry["days"]:
+                    if "list" not in entry["days"]:
                         my_entry["days"] = {"type": DAY_TYPE_DAILY}
                     else:
                         days_list = entry["days"]["list"]
@@ -204,12 +205,13 @@ class DataCollection:
                 if "entity" in action_data:
                     call["entity_id"] = action_data["entity"]
 
-                if not "." in call["service"]:
+                if "." not in call["service"]:
                     domain = call["entity_id"].split(".").pop(0)
                     call["service"] = "{}.{}".format(domain, call["service"])
-                elif "entity_id" in call and not "." in call["entity_id"]:
+                elif "entity_id" in call and "." not in call["entity_id"]:
                     domain = call["service"].split(".").pop(0)
-                    call["entity_id"] = "{}.{}".format(domain, call["entity_id"])
+                    call["entity_id"] = "{}.{}".format(domain,
+                                                       call["entity_id"])
 
                 if (
                     "entity_id" in action_data
@@ -217,9 +219,10 @@ class DataCollection:
                     call["entity_id"] = action_data["entity_id"]
 
                 for attr in action_data:
-                    if attr == "service" or attr == "entity" or attr == "entity_id":
+                    if (attr == "service" or attr == "entity" or
+                            attr == "entity_id"):
                         continue
-                    if not "data" in call:
+                    if "data" not in call:
                         call["data"] = {}
                     call["data"][attr] = action_data[attr]
 
@@ -229,7 +232,7 @@ class DataCollection:
 
     def import_data(self, data):
         """Import datacollection from restored entity"""
-        if not "actions" in data or not "entries" in data:
+        if "actions" not in data or "entries" not in data:
             return False
 
         self.actions = data["actions"]
@@ -320,7 +323,8 @@ class DataCollection:
 
             # parse condition
             if condition_list:
-                my_entry["conditions"] = {"type": CONDITION_TYPE_OR, "list": []}
+                my_entry["conditions"] = {"type": CONDITION_TYPE_OR,
+                                          "list": []}
                 conditions_or = condition_list.split("C")
                 for group in conditions_or:
                     if len(group) > 1:
@@ -438,7 +442,7 @@ class DataCollection:
         return output
 
     def has_sun(self, entry_num=None):
-        if entry_num == None:
+        if entry_num is None:
             for entry in self.entries:
                 if "time" in entry and "event" in entry["time"]:
                     return True
@@ -457,20 +461,22 @@ class DataCollection:
             ts_old = self.get_timestamp_for_entry(
                 entry, self.sun_data, self.workday_data
             )
-            ts_new = self.get_timestamp_for_entry(entry, sun_data, self.workday_data)
+            ts_new = self.get_timestamp_for_entry(entry, sun_data,
+                                                  self.workday_data)
 
             delta = (ts_old - ts_new).total_seconds()
 
             if (
                 abs(delta) >= 60 and abs(delta) <= 3600
-            ):  # only reschedule if the drift is more than 1 min, and not hours (next day)
+            ):  # only reschedule if the drift is more than 1 min,
+                # and not hours (next day)
                 self.sun_data = sun_data
                 return True
 
         return False
 
     def has_workday(self, entry_num=None):
-        if entry_num == None:
+        if entry_num is None:
             for entry in self.entries:
                 if entry["days"]["type"] == DAY_TYPE_WORKDAY:
                     return True
@@ -495,7 +501,8 @@ class DataCollection:
             ts_old = self.get_timestamp_for_entry(
                 entry, self.sun_data, self.workday_data
             )
-            ts_new = self.get_timestamp_for_entry(entry, self.sun_data, workday_data)
+            ts_new = self.get_timestamp_for_entry(entry, self.sun_data,
+                                                  workday_data)
             delta = (ts_old - ts_new).total_seconds()
 
             if abs(delta) >= 3600:  # item needs to be rescheduled
@@ -507,7 +514,7 @@ class DataCollection:
     def get_condition_entities_for_entry(self, entry):
         """Get the conditions for a specific entry"""
         entity_list = []
-        if not self.conditions or not "conditions" in self.entries[entry]:
+        if self.conditions or "conditions" not in self.entries[entry]:
             return None
 
         for entry_condition in self.entries[entry]["conditions"]["list"]:
@@ -518,7 +525,7 @@ class DataCollection:
 
     def validate_conditions_for_entry(self, entry, states):
         """Validate the set of conditions against the results"""
-        if not self.conditions or not "conditions" in self.entries[entry]:
+        if self.conditions or "conditions" not in self.entries[entry]:
             return None
 
         results = []
@@ -535,17 +542,22 @@ class DataCollection:
             if isinstance(required, int):
                 try:
                     actual = int(float(actual))
-                except:
-                    pass
+                except ValueError:
+                    pass  # does not contain anything convertible
+                except Exception:
+                    pass  # Exception occurred while converting
             elif isinstance(required, float):
                 try:
                     actual = float(actual)
-                except:
-                    pass
+                except ValueError:
+                    pass  # does not contain anything convertible
+                except Exception:
+                    pass  # Exception occurred while converting
             elif isinstance(required, str):
                 actual = str(actual)
 
-            if actual == None or actual == "unavailable" or actual == "unknown":
+            if (actual is None or actual == "unavailable" or
+                    actual == "unknown"):
                 result = False
             elif condition_item["match_type"] == MATCH_TYPE_EQUAL:
                 result = actual == required
@@ -558,7 +570,11 @@ class DataCollection:
             else:
                 result = False
 
-            # _LOGGER.debug("validating condition for {}: required={}, actual={}, match_type={}, result={}".format(condition_item["entity"], required,actual,condition_item["match_type"], result))
+            # _LOGGER.debug("validating condition for {}: required={},
+            #               actual={}, match_type={},
+            #               result={}".format(condition_item["entity"],
+            #               required,actual,condition_item["match_type"],
+            #               result))
             results.append(result)
 
         condition_type = self.entries[entry]["conditions"]["type"]
@@ -568,7 +584,7 @@ class DataCollection:
             return any(results)
 
     def get_option_config(self, entry, option):
-        if not self.options or not "options" in self.entries[entry]:
+        if self.options or "options" not in self.entries[entry]:
             return None
 
         options_list = list(self.options.keys())

@@ -9,7 +9,9 @@ from homeassistant.core import HomeAssistant, asyncio
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import service
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
-from homeassistant.helpers.event import async_call_later, async_track_state_change
+from homeassistant.helpers.event import (
+        async_call_later, async_track_state_change
+)
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
 from .const import (
@@ -30,6 +32,7 @@ _LOGGER = logging.getLogger(__name__)
 SCAN_INTERVAL = timedelta(seconds=30)
 
 
+# E999 SyntaxError: invalid syntax
 async def async_setup(hass, config):
     """Track states and offer events for sensors."""
     return True
@@ -102,7 +105,8 @@ class SchedulerCoordinator(DataUpdateCoordinator):
         super().__init__(hass, _LOGGER, name=DOMAIN)
 
         async_track_state_change(self.hass, SUN_ENTITY, self.async_sun_updated)
-        async_track_state_change(self.hass, WORKDAY_ENTITY, self.async_workday_updated)
+        async_track_state_change(self.hass, WORKDAY_ENTITY,
+                                 self.async_workday_updated)
 
         self.update_sun_data()
         self.update_workday_data()
@@ -166,7 +170,8 @@ class SchedulerCoordinator(DataUpdateCoordinator):
             return
 
         workday_data = {
-            "workdays": convert_days_to_numbers(workday_state.attributes["workdays"]),
+            "workdays": convert_days_to_numbers(
+                    workday_state.attributes["workdays"]),
             "today_is_workday": (workday_state.state == "on"),
         }
         if not self.workday_data:

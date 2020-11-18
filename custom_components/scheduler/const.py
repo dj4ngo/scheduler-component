@@ -61,7 +61,10 @@ FIXED_TIME_ENTRY_SCHEMA = cv.time
 SUN_TIME_ENTRY_SCHEMA = vol.Schema(
     {
         vol.Required("event"): vol.In(
-            [TIME_EVENT_SUNRISE, TIME_EVENT_SUNSET, TIME_EVENT_DAWN, TIME_EVENT_DUSK]
+            [TIME_EVENT_SUNRISE,
+             TIME_EVENT_SUNSET,
+             TIME_EVENT_DAWN,
+             TIME_EVENT_DUSK]
         ),
         vol.Optional("offset"): cv.time_period_str,
     }
@@ -72,7 +75,10 @@ ENTRY_SCHEMA = vol.Any(FIXED_TIME_ENTRY_SCHEMA, SUN_TIME_ENTRY_SCHEMA)
 DAYS_SCHEMA = vol.Schema(
     {
         vol.Required("type"): vol.In(
-            [DAY_TYPE_DAILY, DAY_TYPE_WORKDAY, DAY_TYPE_WEEKEND, DAY_TYPE_CUSTOM]
+            [DAY_TYPE_DAILY,
+             DAY_TYPE_WORKDAY,
+             DAY_TYPE_WEEKEND,
+             DAY_TYPE_CUSTOM]
         ),
         vol.Optional("list"): vol.All(
             cv.ensure_list,
@@ -109,7 +115,8 @@ ENTRY_CONDITIONS_SCHEMA = vol.Schema(
 
 ENTRY_SCHEMA = vol.Schema(
     {
-        vol.Required("time"): vol.Any(FIXED_TIME_ENTRY_SCHEMA, SUN_TIME_ENTRY_SCHEMA),
+        vol.Required("time"): vol.Any(FIXED_TIME_ENTRY_SCHEMA,
+                                      SUN_TIME_ENTRY_SCHEMA),
         vol.Optional("end_time"): vol.Any(
             FIXED_TIME_ENTRY_SCHEMA, SUN_TIME_ENTRY_SCHEMA
         ),
@@ -144,7 +151,10 @@ CONDITION_SCHEMA = vol.Schema(
         vol.Optional("entity"): cv.entity_id,
         vol.Optional("state"): vol.Any(int, float, str),
         vol.Optional("match_type"): vol.In(
-            [MATCH_TYPE_EQUAL, MATCH_TYPE_UNEQUAL, MATCH_TYPE_BELOW, MATCH_TYPE_ABOVE]
+            [MATCH_TYPE_EQUAL,
+             MATCH_TYPE_UNEQUAL,
+             MATCH_TYPE_BELOW,
+             MATCH_TYPE_ABOVE]
         ),
     }
 )

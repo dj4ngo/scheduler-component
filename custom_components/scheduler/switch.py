@@ -5,7 +5,9 @@ import secrets
 
 from homeassistant.components.switch import DOMAIN as PLATFORM
 from homeassistant.helpers import entity_platform
-from homeassistant.helpers.device_registry import async_entries_for_config_entry
+from homeassistant.helpers.device_registry import (
+    async_entries_for_config_entry,
+)
 from homeassistant.helpers.entity import ToggleEntity
 from homeassistant.helpers.entity_registry import async_entries_for_device
 from homeassistant.helpers.event import (
@@ -43,12 +45,14 @@ def entity_exists_in_hass(hass, entity_id):
     return hass.states.get(entity_id) is not None
 
 
+# E999 SyntaxError: invalid syntax
 async def async_setup(hass, config):
     """Track states and offer events for binary sensors."""
     return True
 
 
-async def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
+async def async_setup_platform(hass, config, async_add_entities,
+                               discovery_info=None):
     """Set up the platform from config."""
     return True
 
@@ -61,7 +65,8 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     entities = []
 
     device_registry = await hass.helpers.device_registry.async_get_registry()
-    devices = async_entries_for_config_entry(device_registry, config_entry.entry_id)
+    devices = async_entries_for_config_entry(device_registry,
+                                             config_entry.entry_id)
 
     if len(devices) > 1:
         _LOGGER.error("Found multiple devices for integration")
@@ -85,7 +90,8 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
 
         # Generate a unique token
         token = secrets.token_hex(3)
-        while entity_exists_in_hass(hass, "{}.schedule_{}".format(PLATFORM, token)):
+        while entity_exists_in_hass(hass,
+                                    "{}.schedule_{}".format(PLATFORM, token)):
             token = secrets.token_hex(3)
 
         datacollection = DataCollection()
@@ -182,7 +188,8 @@ class ScheduleEntity(RestoreEntity, ToggleEntity):
     def state_attributes(self):
         """Return the data of the entity."""
         output = (
-            self.dataCollection.export_data() if self.dataCollection is not None else {}
+            self.dataCollection.export_data()
+            if self.dataCollection is not None else {}
         )
         if self._next_trigger:
             output["next_trigger"] = self._next_trigger
@@ -241,7 +248,8 @@ class ScheduleEntity(RestoreEntity, ToggleEntity):
 
         if has_overlapping_timeslot:
             # execute the action
-            _LOGGER.debug("We are starting in a timeslot. Proceed with actions.")
+            _LOGGER.debug("We are starting in a timeslot. " +
+                          "Proceed with actions.")
             await self.async_execute_command()
 
         (self._entry, timestamp) = self.dataCollection.get_next_entry()
@@ -282,7 +290,8 @@ class ScheduleEntity(RestoreEntity, ToggleEntity):
             is not None
         ):
             _LOGGER.debug(
-                "timer for %s has the run_once option, disabling" % self.entity_id
+                "timer for %s has the run_once option, disabling"
+                % self.entity_id
             )
             await self.async_turn_off()
             return
@@ -310,14 +319,16 @@ class ScheduleEntity(RestoreEntity, ToggleEntity):
 
         self._queued_entry = self._entry
 
-        service_calls = self.dataCollection.get_service_calls_for_entry(self._entry)
+        service_calls = \
+            self.dataCollection.get_service_calls_for_entry(self._entry)
         for num in range(len(service_calls)):
             service_call = service_calls[num]
 
             await self.async_queue_action(num, service_call)
 
         for item in self._queued_actions:
-            if item is not None and not self.dataCollection.is_timeslot(self._entry):
+            if item is not None and \
+                    not self.dataCollection.is_timeslot(self._entry):
                 _LOGGER.debug("allowing devices to recover for 10 mins")
                 self._retry_timeout = async_call_later(
                     self.coordinator.hass, 600, self.async_abort_queued_actions
@@ -338,8 +349,8 @@ class ScheduleEntity(RestoreEntity, ToggleEntity):
         async def async_handle_device_available():
 
             await self.async_execute_action(service_call)
-
-            if self._queued_actions[num]:  # remove state change listener from queue
+            # remove state change listener from queue
+            if self._queued_actions[num]:
                 self._queued_actions[num]()
                 self._queued_actions[num] = None
 
@@ -362,16 +373,18 @@ class ScheduleEntity(RestoreEntity, ToggleEntity):
         else:
             self._queued_actions.append(cb_handle)
             _LOGGER.debug(
-                "Entity {} is not available right now, action {} will be queued.".format(
+                "Entity {} is not available right now, " +
+                "action {} will be queued.".format(
                     service_call["entity_id"], service_call["service"]
                 )
             )
 
     async def async_execute_action(self, service_call):
 
-        condition_entities = self.dataCollection.get_condition_entities_for_entry(
-            self._queued_entry
-        )
+        condition_entities = \
+            self.dataCollection.get_condition_entities_for_entry(
+                self._queued_entry
+            )
         if condition_entities:
             _LOGGER.debug("validating conditions for %s" % self.entity_id)
             states = {}
@@ -383,7 +396,8 @@ class ScheduleEntity(RestoreEntity, ToggleEntity):
                 self._queued_entry, states
             )
             if not result:
-                _LOGGER.debug("conditions have failed, skipping execution of actions")
+                _LOGGER.debug("conditions have failed, " +
+                              "skipping execution of actions")
                 return
 
         if "entity_id" in service_call:
@@ -393,7 +407,8 @@ class ScheduleEntity(RestoreEntity, ToggleEntity):
                 )
             )
         else:
-            _LOGGER.debug("Executing action {}.".format(service_call["service"]))
+            _LOGGER.debug("Executing action {}.".format(
+                service_call["service"]))
 
         state = self.coordinator.hass.states.get(service_call["entity_id"])
 
@@ -468,6 +483,7 @@ class ScheduleEntity(RestoreEntity, ToggleEntity):
 
         await super().async_will_remove_from_hass()
 
+# E501 line too long (84 > 79 characters)
         entity_registry = (
             await self.coordinator.hass.helpers.entity_registry.async_get_registry()
         )
@@ -489,7 +505,8 @@ class ScheduleEntity(RestoreEntity, ToggleEntity):
             if not self.dataCollection.has_sun(self._entry):
                 return
 
-            should_update = self.dataCollection.update_sun_data(sun_data, self._entry)
+            should_update = self.dataCollection.update_sun_data(sun_data,
+                                                                self._entry)
             if should_update:
                 self._state = STATE_DISABLED
                 self._timer()
@@ -545,7 +562,8 @@ class ScheduleEntity(RestoreEntity, ToggleEntity):
         async def async_check_entities_available(entity, old_state, new_state):
             result = True
             _LOGGER.debug(
-                "Entity {} was updated to state={}, re-evaluating queued action.".format(
+                "Entity {} was updated to state={},  " +
+                "re-evaluating queued action.".format(
                     entity, new_state.state
                 )
             )
@@ -572,7 +590,8 @@ class ScheduleEntity(RestoreEntity, ToggleEntity):
                 or state.state == "unknown"
             ):
                 listener_handle = async_track_state_change(
-                    self.coordinator.hass, entity, async_check_entities_available
+                    self.coordinator.hass, entity,
+                    async_check_entities_available
                 )
                 listener_handles.append(listener_handle)
 
